@@ -3,10 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Supplier;
-use Egulias\EmailValidator\Exception\AtextAfterCFWS;
 use Illuminate\Http\Request;
-use DB;
-use mysql_xdevapi\Exception;
+use Illuminate\Http\Response;
+use Validator;
 
 class SupplierController extends Controller
 {
@@ -36,19 +35,35 @@ class SupplierController extends Controller
      * Store a newly created resource in storage.
      *
      * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
+     * @return \Illuminate\Http\JsonResponse
      */
     public function store(Request $request)
     {
-        $aInput=$request->all();
-        $aData['name'] = $aInput['name'];
-        $aData['info'] = $aInput['info'];
-        $aData['rules'] = $aInput['rules'];
-        $aData['district'] = $aInput['district'];
-        $aData['url'] = $aInput['url'];
-         Supplier::insert($aData);
-         return response()->noContent();
 
+        $validator = Validator::make($request->all(), [
+            'name' => 'required|unique:suppliers',
+        ]);
+
+        if ($validator->fails()) {
+            $responseData = [
+                'errors'  => $validator->errors(),
+            ];
+
+            return response()->json($responseData, Response::HTTP_UNPROCESSABLE_ENTITY);
+        }else{
+
+            $aInput=$request->all();
+            $aData['name'] = $aInput['name'];
+            $aData['info'] = $aInput['info'];
+            $aData['rules'] = $aInput['rules'];
+            $aData['district'] = $aInput['district'];
+            $aData['url'] = $aInput['url'];
+            Supplier::insert($aData);
+            $responseData = [
+                'message'  => 'Supplier added!',
+            ];
+            return response()->json(['message' => $responseData], Response::HTTP_NO_CONTENT);
+        }
     }
 
     /**

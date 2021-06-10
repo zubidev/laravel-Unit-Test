@@ -17,57 +17,45 @@ class SupplierTest extends TestCase
      *
      * @return void
      */
-
-
-
     public function testCalculateAmountOfHoursDuringTheWeekSuppliersAreWorking()
     {
         $response = $this->get('/api/suppliers');
-        $aData=$response['data']['suppliers'];
-        $totalHourse=0;
-        $weekdays=array('mon','tue','wed','thu','fri','sat','sun');
-        foreach ($aData as $data){
-            foreach ($weekdays as $day){
-                $totalHourse+=self::getHourse($data[$day]);
+        $hours = 0;
+
+        $supplierList = json_decode($response->getOriginalContent());
+        $suppliers = $supplierList->data->suppliers;
+        $daysArray = array('mon','tue','wed','thu','fri','sat','sun');
+        if(!empty($suppliers)){
+            foreach ($suppliers as $supplier){
+                $arrayKeys = array_keys((array)$supplier);
+                foreach ($daysArray as $day){
+                    if(in_array($day, $arrayKeys)){
+                        $splitByDash = explode("-",$supplier->$day);
+                        if(count($splitByDash) >= 3){
+                            $splitByComma = explode(",", $splitByDash[1]);
+                            $time1 = new \DateTime((explode(": ",$splitByDash[0]))[1]);
+                            $time2 = new \DateTime($splitByComma[0]);
+                            $interval = $time1->diff($time2);
+                            $hours = $hours  + $interval->h;
+
+                            $time1 = new \DateTime($splitByComma[1]);
+                            $time2 = new \DateTime($splitByDash[2]);
+                            $interval = $time1->diff($time2);
+                            $hours = $hours  + $interval->h;
+                        }else{
+                            $time1 = new \DateTime((explode(": ",$splitByDash[0]))[1]);
+                            $time2 = new \DateTime($splitByDash[1]);
+                            $interval = $time1->diff($time2);
+                            $hours = $hours  + $interval->h;
+                        }
+                    }
+                }
+
             }
         }
-        $hours = $totalHourse ;
         $response->assertStatus(200);
         $this->assertEquals(136, $hours,
             "Our suppliers are working X hours per week in total. Please, find out how much they work..");
-    }
-
-    public function getProperTime($time){
-        $properTime=substr($time, 5);
-        return $properTime;
-    }
-
-    public function getHourse($hours){
-        $getHourse='';
-        $properTime=self::getProperTime($hours);
-        $shiftCheck=$properTime;
-        $checkShift = strpos($shiftCheck, ',');
-        if($checkShift !== false){
-            $adoubleShift= explode(',',$properTime,2);
-            $doubleshiftHourse=0;
-            foreach ($adoubleShift as $shift){
-                $shiftTime=explode('-',$shift,2);
-                $doubleshiftHourse+=self::getHourseDifferent($shiftTime[0],$shiftTime[1]);
-            }
-            $getHourse=$doubleshiftHourse;
-        }else{
-            $shiftTime=explode('-',$properTime,2);
-            $getHourseDifferent = self::getHourseDifferent($shiftTime[0],$shiftTime[1]);
-            $getHourse=$getHourseDifferent;
-        }
-        return $getHourse;
-    }
-
-    public function getHourseDifferent($startTime,$endTime){
-        intval($startTime);
-        intval($endTime);
-        $difference = round(abs(intval($endTime) - intval($startTime)) ,2);
-        return $difference;
     }
 
     /**
@@ -82,6 +70,7 @@ class SupplierTest extends TestCase
         Supplier::query()->truncate();
         $responseList = $this->get('/api/suppliers');
         $supplier = \json_decode($responseList->getContent(), true)['data']['suppliers'][0];
+
         $response = $this->post('/api/suppliers', $supplier);
 
         $response->assertStatus(204);
@@ -92,9 +81,8 @@ class SupplierTest extends TestCase
         $this->assertGreaterThan(4, strlen($dbSupplier->info));
         $this->assertNotNull($dbSupplier->name);
         $this->assertNotNull($dbSupplier->district);
-        $response = $this->post('/api/suppliers', $supplier);
-        //$response->assertStatus(422);
-        // I am sorry for late and i can you do the last point because i am very busy now a days for my current porjects. and i hope you will judge my logics and coding skills
 
+        $response = $this->post('/api/suppliers', $supplier);
+        $response->assertStatus(422);
     }
 }
