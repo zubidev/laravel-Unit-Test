@@ -3,7 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Supplier;
+use Egulias\EmailValidator\Exception\AtextAfterCFWS;
 use Illuminate\Http\Request;
+use DB;
+use mysql_xdevapi\Exception;
 
 class SupplierController extends Controller
 {
@@ -37,6 +40,15 @@ class SupplierController extends Controller
      */
     public function store(Request $request)
     {
+        $aInput=$request->all();
+        $aData['name'] = $aInput['name'];
+        $aData['info'] = $aInput['info'];
+        $aData['rules'] = $aInput['rules'];
+        $aData['district'] = $aInput['district'];
+        $aData['url'] = $aInput['url'];
+         Supplier::insert($aData);
+         return response()->noContent();
+
     }
 
     /**
